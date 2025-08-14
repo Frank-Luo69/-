@@ -17,14 +17,36 @@ export function hexagramNameFromTrigrams(lowerZh: string, upperZh: string): stri
   return row[upperZh] ?? null;
 }
 
+// 把简体卦名转为维基文库使用的繁体；只列出“确有差异”的条目，避免重复键与无意义映射
 export function wikisourceSlug(nameZh: string): string {
-  // Wikisource uses traditional titles; map simplified -> traditional for known variants
-  const map: Record<string,string> = {
-    "兑":"兌","颐":"頤","蛊":"蠱","涣":"渙","谦":"謙","观":"觀","贲":"賁","复":"復","剥":"剝","讼":"訟",
-    "丰":"豐","渐":"漸","离":"離","坎":"坎","咸":"咸","夬":"夬","晋":"晉","遗":"遺",
-    "随":"隨","噬嗑":"噬嗑","归妹":"歸妹","节":"節","无妄":"无妄","困":"困","豫":"豫","观":"觀",
-    "既济":"既濟","未济":"未濟","渙":"渙","蹇":"蹇","谦":"謙","贲":"賁","萃":"萃","颐":"頤","渐":"漸",
+  const map: Record<string, string> = {
+    "兑": "兌",
+    "颐": "頤",
+    "蛊": "蠱",
+    "涣": "渙",
+    "谦": "謙",
+    "观": "觀",
+    "贲": "賁",
+    "复": "復",
+    "剥": "剝",
+    "讼": "訟",
+    "丰": "豐",
+    "渐": "漸",
+    "离": "離",
+    "晋": "晉",
+    "随": "隨",
+    "归妹": "歸妹",
+    "节": "節",
+    "无妄": "無妄",
+    "既济": "既濟",
+    "未济": "未濟",
+    "损": "損",
+    "师": "師",
+    "临": "臨",
+    "大壮": "大壯",
+    "小过": "小過",
+    "大过": "大過"
   };
-  // First try identity; if not, try mapped traditional
+  // 先尝试原文；如有映射则返回繁体
   return map[nameZh] ?? nameZh;
 }
