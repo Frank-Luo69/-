@@ -1,0 +1,97 @@
+{
+  "大衍筮法": {
+    "def": "以五十为总数、取用四十九，分而为二、挂一、揲四归奇，三变成一爻，六爻成卦的起卦方法。",
+    "pinyin": "dà yǎn shì fǎ",
+    "en": "Yarrow-stalk method"
+  },
+  "挂一": {
+    "def": "第一变时，从右堆取出一根，象“三”，不参与按四计数。",
+    "pinyin": "guà yī",
+    "en": "set-aside-one"
+  },
+  "按四归奇": {
+    "def": "将一堆以四为一组计数，余数若为0按4记，取出这几根作为“奇”，以定取数。",
+    "pinyin": "àn sì guī qí",
+    "en": "count-in-fours",
+    "example": "将一堆以四为一组计数，余0按4记"
+  },
+  "老阴": "爻值6，动爻，阴而动，读其爻辞；在之卦变为阳。",
+  "老阳": "爻值9，动爻，阳而动，读其爻辞；在之卦变为阴。",
+  "少阴": "爻值8，静爻，阴而静。",
+  "少阳": "爻值7，静爻，阳而静。",
+  "动爻": {
+    "def": "值为6或9的爻，会“变”；读其爻辞为主。",
+    "pinyin": "dòng yáo",
+    "en": "moving line"
+  },
+  "静爻": {
+    "def": "值为7或8的爻，不变；多用于参照。",
+    "pinyin": "jìng yáo",
+    "en": "static line"
+  },
+  "之卦": {
+    "def": "将动爻变位后的卦，用于参读，不夺本义。",
+    "pinyin": "zhī guà",
+    "en": "relating hexagram"
+  },
+  "互卦": {
+    "def": "取本卦二三四作下三画、三四五作上三画所得之卦，可作旁证。",
+    "pinyin": "hù guà",
+    "en": "mutual hexagram"
+  },
+  "错卦": {
+    "def": "阴阳全反的卦。",
+    "pinyin": "cuò guà",
+    "en": "opposite hexagram"
+  },
+  "综卦": {
+    "def": "上下倒置的卦。",
+    "pinyin": "zòng guà",
+    "en": "inverted hexagram"
+  },
+  "得位": {
+    "def": "阳爻居阳位（奇位1、3、5），阴爻居阴位（偶位2、4、6），谓之得位；反之失位。",
+    "pinyin": "dé wèi",
+    "en": "proper position"
+  },
+  "得中": {
+    "def": "二、五为“中位”，居中为美。",
+    "pinyin": "dé zhōng",
+    "en": "central position"
+  },
+  "卦辞": {
+    "def": "解释整卦大义的文字。",
+    "pinyin": "guà cí",
+    "en": "Judgement"
+  },
+  "爻辞": {
+    "def": "解释某一爻（位）的文字，动爻多取爻辞为主。",
+    "pinyin": "yáo cí",
+    "en": "Line text"
+  },
+  "彖曰": {
+    "def": "解“卦辞”之义的文字，多论大意。",
+    "pinyin": "tuàn yuē",
+    "en": "Tuan/Commentary on the Decision"
+  },
+  "象曰": {
+    "def": "以卦象、德性譬喻而释义者，多言君子取法。",
+    "pinyin": "xiàng yuē",
+    "en": "Commentary on the Image"
+  },
+  "用九": {
+    "def": "乾卦六爻皆阳而动时，追加的一条综合之辞。",
+    "pinyin": "yòng jiǔ",
+    "en": "Use of Nine"
+  },
+  "用六": {
+    "def": "坤卦六爻皆阴而动时，追加的一条综合之辞。",
+    "pinyin": "yòng liù",
+    "en": "Use of Six"
+  },
+  "朱熹本义": {
+    "def": "以本卦为主，动爻爻辞为断；多动先中（二、五），次三、四；之卦可参而不夺本义。",
+    "pinyin": "Zhū Xī běn yì",
+    "en": "Zhu Xi's doctrine"
+  }
+}

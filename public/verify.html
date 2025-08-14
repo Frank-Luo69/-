@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>卦象报告校验 · 本地工具</title>
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial; background:#f6f7f9; margin:0; }
+    .wrap { max-width: 860px; margin: 24px auto; padding: 0 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .sub { color:#6b7280; font-size:12px; margin-bottom:12px; }
+    label { font-size: 13px; color:#374151; display:block; margin: 10px 0 6px; }
+    textarea, input { width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:10px; padding:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; }
+    button { border:1px solid #d1d5db; border-radius:10px; padding:8px 12px; background:#fff; cursor:pointer; }
+    button:hover { background:#f3f4f6; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; }
+    .ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+    .bad { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    footer { color:#9ca3af; font-size:12px; margin-top:16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>卦象报告校验 · 本地工具</h1>
+      <div class="sub">说明：将报告里的“校验负载”（JSON）粘贴在下方，点击“计算哈希”；把得到的值与报告上显示的哈希（或二维码中的哈希）比对，如果一致，说明报告未被篡改。</div>
+
+      <label>① 粘贴“校验负载” JSON</label>
+      <textarea id="payload" rows="6" placeholder='例如：{"ts":"2025-08-14T05:12:33.123Z","seed":"(secure-random)","lines":[...],"relating":[...],"movingIdxs":[...],"pattern":"..."}'></textarea>
+
+      <div class="row" style="margin-top:8px;">
+        <button id="btnHash">计算 SHA-256 哈希</button>
+        <button id="btnCopy">复制哈希</button>
+        <span id="status" class="pill" style="display:none;"></span>
+      </div>
+
+      <label style="margin-top:10px;">②（可选）粘贴“二维码摘要”文本</label>
+      <input id="qrtext" placeholder='例如：{"t":"2025-08-14T05:12:33.123Z","c":"<哈希值>"}' />
+      <div class="row" style="margin-top:8px;">
+        <button id="btnUseQr">从二维码摘要填入“期望哈希”</button>
+      </div>
+
+      <label style="margin-top:10px;">③ 期望哈希（来自报告或二维码）</label>
+      <input id="expect" placeholder="粘贴报告展示的哈希（或上一步自动填入）" />
+
+      <label style="margin-top:10px;">④ 计算结果</label>
+      <input id="computed" readonly placeholder="点击“计算 SHA-256 哈希”后显示" />
+
+      <div style="margin-top:12px;">
+        <span id="cmp" class="pill" style="display:none;"></span>
+      </div>
+
+      <footer>提示：所有计算在你的浏览器本地完成，不会上传任何数据。</footer>
+    </div>
+  </div>
+
+  <script>
+    async function sha256Hex(str){
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function setText(id, v){ document.getElementById(id).value = v || ''; }
+    function getText(id){ return document.getElementById(id).value || ''; }
+    function show(id, ok, msg){
+      const el = document.getElementById(id);
+      el.style.display = 'inline-block';
+      el.className = 'pill ' + (ok ? 'ok' : 'bad');
+      el.textContent = msg;
+    }
+
+    document.getElementById('btnHash').addEventListener('click', async ()=>{
+      const payload = getText('payload').trim();
+      if (!payload) { alert('请先粘贴“校验负载”JSON'); return; }
+      try {
+        // 做一次 parse 再 stringify，确保字段顺序稳定
+        const obj = JSON.parse(payload);
+        const norm = JSON.stringify(obj);
+        const h = await sha256Hex(norm);
+        setText('computed', h);
+        show('status', true, '已计算');
+        const exp = getText('expect').trim();
+        if (exp) {
+          const ok = exp.toLowerCase() === h.toLowerCase();
+          show('cmp', ok, ok ? '比对一致 ✅' : '比对不一致 ❌');
+        } else {
+          document.getElementById('cmp').style.display = 'none';
+        }
+      } catch(e){
+        show('status', false, 'JSON 解析失败');
+      }
+    });
+
+    document.getElementById('btnCopy').addEventListener('click', async ()=>{
+      const v = getText('computed');
+      if (!v) return;
+      try { await navigator.clipboard.writeText(v); } catch {}
+    });
+
+    document.getElementById('btnUseQr').addEventListener('click', ()=>{
+      const s = getText('qrtext').trim();
+      if (!s) { alert('请粘贴二维码摘要文本'); return; }
+      try {
+        const x = JSON.parse(s);
+        if (x && x.c) setText('expect', String(x.c));
+      } catch(e){
+        alert('二维码文本不是有效的 JSON');
+      }
+    });
+  </script>
+</body>
+</html>
