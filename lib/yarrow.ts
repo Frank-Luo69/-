@@ -1,158 +1,120 @@
-// lib/yarrow.ts
-// 大衍筮法（蓍草法）严谨实现：每爻三变 -> 6/7/8/9
-// 参考规则：
-//  - 初变：从右束取一，左右各按“四取余（零当四）”，taken = 1 + leftRem + rightRem ∈ {9,5}
-//  - 二/三变：不取“挂一”，各按“四取余（零当四）”，taken ∈ {8,4}
-//  - 49 - (9|5) - (8|4) - (8|4) ∈ {36,32,28,24} 映射为 {6,7,8,9}
+import { RNG, randomInt } from "./random";
 
-export type RNG = () => number;
+export type LineValue = 6 | 7 | 8 | 9;  // 6=老阴(动) 7=少阳 8=少阴 9=老阳(动)
+export type YinYang = 0 | 1;            // 0=阴 1=阳
+export type Lines = [LineValue, LineValue, LineValue, LineValue, LineValue, LineValue];
 
 /** 非零四余：n % 4，零按 4 计 */
-function remainderMod4NonZero(n: number): number {
+export function remainderMod4NonZero(n: number): 1 | 2 | 3 | 4 {
   const r = n % 4;
-  return r === 0 ? 4 : r;
+  return (r === 0 ? 4 : (r as 1 | 2 | 3));
 }
 
 /** 将 n 束随机分作 A/B 两束（皆非 0） */
-function splitAB(n: number, rng: RNG): { A: number; B: number } {
-  // A ∈ [1, n-1]，B = n - A
-  const A = 1 + Math.floor(rng() * (n - 1));
-  const B = n - A;
-  // 极小概率保护（理论上不会 0）
-  if (A <= 0) return { A: 1, B: n - 1 };
-  if (B <= 0) return { A: n - 1, B: 1 };
-  return { A, B };
+export function splitNonZero(total: number, rng: RNG) {
+  if (total <= 1) throw new Error("total must be > 1");
+  const A = randomInt(1, total - 1, rng); // 确保两堆非空
+  const B = total - A;
+  return [A, B] as const;
 }
 
-/** 单次变化（step 1/2/3），返回下一轮剩余数与细节 */
-function nextChange(
+/** 单次变化（步骤 1/2/3）——返回下一轮剩余与细节 */
+function nextChangeDetailed(
   n: number,
   rng: RNG,
-  options: { hangOne: 0 | 1 }
-): {
-  next: number;
-  taken: number;
-  leftRem: number;
-  rightRem: number;
-  A: number;
-  B: number;
-  hangOne: 0 | 1;
-} {
-  const { A, B } = splitAB(n, rng);
-  const right = B - options.hangOne;
+  hangOne: 0 | 1
+) {
+  const [A, B] = splitNonZero(n, rng);
+  const right = B - hangOne;
   const leftRem = remainderMod4NonZero(A);
   const rightRem = remainderMod4NonZero(right);
-  const taken = options.hangOne + leftRem + rightRem; // 9/5 或 8/4
+  const taken = hangOne + leftRem + rightRem; // 9/5 或 8/4
   const next = n - taken;
-  return { next, taken, leftRem, rightRem, A, B, hangOne: options.hangOne };
+  return { from: n, to: next, taken, A, B, hangOne, leftRem, rightRem };
 }
 
 /** 计算一爻（三变），返回 6/7/8/9 与过程细节 */
-function castOneLine(rng: RNG): {
-  value: 6 | 7 | 8 | 9;
-  steps: Array<ReturnType<typeof nextChange>>;
-  buckets: [number, number, number]; // 每次剩余
-} {
-  const buckets: [number, number, number] = [49, 0, 0];
+function castOneLine(rng: RNG) {
+  const s1 = nextChangeDetailed(49, rng, 1); // 第一次要挂一
+  const s2 = nextChangeDetailed(s1.to, rng, 0);
+  const s3 = nextChangeDetailed(s2.to, rng, 0);
 
-  const s1 = nextChange(buckets[0], rng, { hangOne: 1 }); // 第一次要挂一
-  buckets[1] = s1.next;
-  const s2 = nextChange(buckets[1], rng, { hangOne: 0 });
-  buckets[2] = s2.next;
-  const s3 = nextChange(buckets[2], rng, { hangOne: 0 });
-
-  const final = s3.next; // ∈ {36,32,28,24}
-  let value: 6 | 7 | 8 | 9;
+  const final = s3.to; // ∈ {36,32,28,24}
+  let value: LineValue;
   switch (final) {
-    case 36:
-      value = 6; // 老阴
-      break;
-    case 32:
-      value = 7; // 少阳
-      break;
-    case 28:
-      value = 8; // 少阴
-      break;
-    case 24:
-      value = 9; // 老阳
-      break;
+    case 36: value = 6; break; // 老阴
+    case 32: value = 7; break; // 少阳
+    case 28: value = 8; break; // 少阴
+    case 24: value = 9; break; // 老阳
     default:
-      // 理论上不会到这里；做一次兜底
+      // 理论上不会到这里；兜底映射
       value = final <= 26 ? 9 : final <= 30 ? 8 : final <= 34 ? 7 : 6;
   }
 
-  return { value, steps: [s1, s2, s3], buckets: [49, s1.next, s2.next] };
+  return { value, steps: [s1, s2, s3] as const };
 }
 
 /** 生成一卦（自下而上 6 爻） */
-export function generateHexagramYarrow(rng: RNG): {
-  lines: Array<6 | 7 | 8 | 9>;
-  relating: Array<6 | 7 | 8 | 9>;
-  detail: Array<ReturnType<typeof castOneLine>>;
-  nuclear: number[]; // 互卦（bits）
-  inverted: number[]; // 综卦（bits 反序）
-  opposite: number[]; // 错卦（bits 取反）
-} {
+export function generateHexagramYarrow(rng: RNG) {
   const detail = Array.from({ length: 6 }, () => castOneLine(rng));
-  const lines = detail.map((d) => d.value) as Array<6 | 7 | 8 | 9>;
+  const lines = detail.map(d => d.value) as Lines;
 
   // 之卦：动爻（6/9）取变，静爻（7/8）不变
-  const relating = lines.map((v) => {
-    if (v === 6) return 7; // 阴动 -> 阳
-    if (v === 9) return 8; // 阳动 -> 阴
-    return v; // 静爻不变
-  }) as Array<6 | 7 | 8 | 9>;
+  const relating = relatingFrom(lines) as Lines;
 
   const bits = toBinary(lines);
   const nuclear = nuclearHexagram(bits);
   const inverted = bits.slice().reverse();
-  const opposite = bits.map((b) => (b ? 0 : 1));
+  const opposite = bits.map(b => (b ? 0 : 1));
 
   return { lines, relating, detail, nuclear, inverted, opposite };
 }
 
 /** 将 6/7/8/9 转为 0/1（阴=0，阳=1），顺序自下而上 */
-export function toBinary(lines: Array<6 | 7 | 8 | 9>): number[] {
-  return lines.map((v) => (v === 7 || v === 9 ? 1 : 0));
+export function toBinary(lines: Lines): number[] {
+  return lines.map(v => (v === 7 || v === 9 ? 1 : 0));
+}
+
+/** 阳性判断 */
+export function isYang(v: LineValue): boolean {
+  return v === 7 || v === 9;
+}
+
+/** 由动爻得到之卦 */
+export function relatingFrom(lines: Lines): LineValue[] {
+  return lines.map(v => (v === 6 ? 7 : v === 9 ? 8 : v));
 }
 
 /** 分上下卦（三位一组），bits 顺序自下而上 */
-export function splitTrigrams(bits: number[]): {
-  lower: [number, number, number];
-  upper: [number, number, number];
-} {
-  const lower: [number, number, number] = [
-    bits[0] ?? 0,
-    bits[1] ?? 0,
-    bits[2] ?? 0,
-  ];
-  const upper: [number, number, number] = [
-    bits[3] ?? 0,
-    bits[4] ?? 0,
-    bits[5] ?? 0,
-  ];
+export function splitTrigrams(bits: number[]) {
+  const lower: [number, number, number] = [bits[0] ?? 0, bits[1] ?? 0, bits[2] ?? 0];
+  const upper: [number, number, number] = [bits[3] ?? 0, bits[4] ?? 0, bits[5] ?? 0];
   return { lower, upper };
 }
 
 /** 互卦：取第 2~4 爻为下卦，第 3~5 爻为上卦（均自下而上） */
 function nuclearHexagram(bits: number[]): number[] {
-  // bits: [L1, L2, L3, L4, L5, L6] 自下而上
-  const lower = [bits[1], bits[2], bits[3]].map((x) => (x ?? 0));
-  const upper = [bits[2], bits[3], bits[4]].map((x) => (x ?? 0));
+  const lower = [bits[1], bits[2], bits[3]].map(x => x ?? 0);
+  const upper = [bits[2], bits[3], bits[4]].map(x => x ?? 0);
   return [...lower, ...upper];
 }
 
-/** 八卦名录（简表） */
+/** 八卦名录 */
 export const TRIGRAM_NAMES: Record<
   "111" | "110" | "101" | "100" | "011" | "010" | "001" | "000",
-  { zh: string; pinyin: string; symbol: string }
+  { zh: string; pinyin: string; en: string; symbol: string }
 > = {
-  "111": { zh: "乾", pinyin: "qián", symbol: "☰" },
-  "110": { zh: "兑", pinyin: "duì", symbol: "☱" },
-  "101": { zh: "离", pinyin: "lí", symbol: "☲" },
-  "100": { zh: "震", pinyin: "zhèn", symbol: "☳" },
-  "011": { zh: "巽", pinyin: "xùn", symbol: "☴" },
-  "010": { zh: "坎", pinyin: "kǎn", symbol: "☵" },
-  "001": { zh: "艮", pinyin: "gèn", symbol: "☶" },
-  "000": { zh: "坤", pinyin: "kūn", symbol: "☷" },
+  "111": { zh: "乾", pinyin: "qián", en: "Force", symbol: "☰" },
+  "110": { zh: "兑", pinyin: "duì",  en: "Lake",  symbol: "☱" },
+  "101": { zh: "离", pinyin: "lí",   en: "Fire",  symbol: "☲" },
+  "100": { zh: "震", pinyin: "zhèn", en: "Thunder", symbol: "☳" },
+  "011": { zh: "巽", pinyin: "xùn",  en: "Wind",  symbol: "☴" },
+  "010": { zh: "坎", pinyin: "kǎn",  en: "Water", symbol: "☵" },
+  "001": { zh: "艮", pinyin: "gèn",  en: "Mountain", symbol: "☶" },
+  "000": { zh: "坤", pinyin: "kūn",  en: "Earth", symbol: "☷" },
 };
+
+export function trigramKey(tri: [YinYang, YinYang, YinYang]) {
+  return `${tri[0]}${tri[1]}${tri[2]}` as
+    | "111" | "110" | "101" | "100" | "011" | "010" | "001" | "000";
+}
