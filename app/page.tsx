@@ -25,7 +25,7 @@ import {
 import { cryptoRNG, mulberry32 } from "@/lib/random";
 
 export default function Page() {
-  // ✅ 关键修复：补上初始化，而不是被 JSX “挤断”
+  // ✅ 关键修复：给 useState 正确初始化，不掺杂 JSX
   const [seedText, setSeedText] = useState<string>("");
   const [question, setQuestion] = useState<string>("");
   const [result, setResult] = useState<any>(null);
@@ -59,7 +59,7 @@ export default function Page() {
     } catch {}
   };
 
-  // ✅ 新增：复制复现链接（把 seed、q 写进查询参数）
+  // 复制复现链接（把 seed、q 写进查询参数）
   const copyReproduceLink = async () => {
     try {
       const url = new URL(window.location.href);
@@ -69,12 +69,10 @@ export default function Page() {
       else url.searchParams.delete("q");
       await navigator.clipboard.writeText(url.toString());
       alert("已复制复现链接到剪贴板");
-    } catch (e) {
-      console.error(e);
-    }
+    } catch {}
   };
 
-  // ✅ 可选增强：从 URL 读取 ?seed / ?q 以便复现
+  // 从 URL 读取 ?seed / ?q 以便复现
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
@@ -90,13 +88,12 @@ export default function Page() {
     const bin = toBinary(result.lines);
     const { lower, upper } = splitTrigrams(bin);
     const lowerName =
-      TRIGRAM_NAMES[`${lower[0]}${lower[1]}${lower[2]}`];
+      TRIGRAM_NAMES[`${lower[0]}${lower[1]}${lower[2]}` as keyof typeof TRIGRAM_NAMES];
     const upperName =
-      TRIGRAM_NAMES[`${upper[0]}${upper[1]}${upper[2]}`];
+      TRIGRAM_NAMES[`${upper[0]}${upper[1]}${upper[2]}` as keyof typeof TRIGRAM_NAMES];
     return { lowerName, upperName };
   }, [result]);
 
-  // ✅ 关键修复：<PWARegister /> 与页头 JSX 放回 return
   return (
     <main className="mx-auto max-w-6xl p-6">
       <PWARegister />
@@ -126,9 +123,7 @@ export default function Page() {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-600">
-            问题/占问（可选）
-          </label>
+          <label className="text-sm text-gray-600">问题/占问（可选）</label>
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -161,12 +156,10 @@ export default function Page() {
             <div className="text-base font-semibold mb-3">八卦信息</div>
             <div className="text-sm text-gray-700">
               <div>
-                下卦：{lowerInfo?.lowerName.symbol} {lowerInfo?.lowerName.zh} (
-                {lowerInfo?.lowerName.pinyin})
+                下卦：{lowerInfo?.lowerName.symbol} {lowerInfo?.lowerName.zh} ({lowerInfo?.lowerName.pinyin})
               </div>
               <div>
-                上卦：{lowerInfo?.upperName.symbol} {lowerInfo?.upperName.zh} (
-                {lowerInfo?.upperName.pinyin})
+                上卦：{lowerInfo?.upperName.symbol} {lowerInfo?.upperName.zh} ({lowerInfo?.upperName.pinyin})
               </div>
               <div className="mt-2 text-xs text-gray-500">
                 注：本页侧重“计算与逻辑”的准确实现。卦名/卦序库可后续扩展。
@@ -175,18 +168,14 @@ export default function Page() {
           </div>
 
           <div className="rounded-2xl border p-4 shadow-sm bg-white md:col-span-2">
-            <div className="text-base font-semibold mb-3">
-              过程明细（每爻三变）
-            </div>
+            <div className="text-base font-semibold mb-3">过程明细（每爻三变）</div>
             <pre className="whitespace-pre-wrap text-xs text-gray-700">
 {JSON.stringify(result.detail, null, 2)}
             </pre>
           </div>
 
           <div className="rounded-2xl border p-4 shadow-sm bg-white md:col-span-2">
-            <div className="text-base font-semibold mb-3">
-              互卦 / 综卦 / 错卦（二进制展示）
-            </div>
+            <div className="text-base font-semibold mb-3">互卦 / 综卦 / 错卦（二进制展示）</div>
             <pre className="whitespace-pre-wrap text-xs text-gray-700">
 {JSON.stringify(
   {
