@@ -94,10 +94,13 @@ export function adviseZhuXi(lines: Lines): ZhuXiAdvice {
     primaryLines = [1,4]; // 二五为中，仅作标识
   }
 
-  // 卦象信息
+  // 卦象信息（加上类型断言，保证索引键是 "111" | ... | "000"）
   const { lower, upper } = splitTrigrams(bin);
-  const lowerName = TRIGRAM_NAMES[`${lower[0]}${lower[1]}${lower[2]}`];
-  const upperName = TRIGRAM_NAMES[`${upper[0]}${upper[1]}${upper[2]}`];
+  type TriKey = keyof typeof TRIGRAM_NAMES;
+  const lowerKey = `${lower[0]}${lower[1]}${lower[2]}` as TriKey;
+  const upperKey = `${upper[0]}${upper[1]}${upper[2]}` as TriKey;
+  const lowerName = TRIGRAM_NAMES[lowerKey];
+  const upperName = TRIGRAM_NAMES[upperKey];
 
   // 特例：六爻皆动
   let special: string | undefined;
