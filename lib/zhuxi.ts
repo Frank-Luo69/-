@@ -1,5 +1,5 @@
 import type { Lines } from "./yarrow";
-import { toBinary, isYang, relatingFrom, splitTrigrams, TRIGRAM_NAMES } from "./yarrow";
+import { toBinary, splitTrigrams, TRIGRAM_NAMES } from "./yarrow";
 
 // 位置名称（自下而上）
 const POS = ["初","二","三","四","五","上"] as const;
@@ -28,10 +28,11 @@ function isCentral(idx: number): boolean {
   return idx === 1 || idx === 4; // 二、五为中
 }
 
-function isQian(bin: [0|1,0|1,0|1,0|1,0|1,0|1]) {
+// 放宽为 number[]，避免类型不匹配（运行时依然逐位判断 6 位）
+function isQian(bin: number[]) {
   return bin[0]===1 && bin[1]===1 && bin[2]===1 && bin[3]===1 && bin[4]===1 && bin[5]===1;
 }
-function isKun(bin: [0|1,0|1,0|1,0|1,0|1,0|1]) {
+function isKun(bin: number[]) {
   return bin[0]===0 && bin[1]===0 && bin[2]===0 && bin[3]===0 && bin[4]===0 && bin[5]===0;
 }
 
