@@ -4,6 +4,11 @@ import { toBinary, splitTrigrams, TRIGRAM_NAMES } from "./yarrow";
 // 位置名称（自下而上）
 const POS = ["初","二","三","四","五","上"] as const;
 
+// 明确的字面量联合，避免被推断成 string
+type YinYangLiteral = "阳" | "阴";
+const YANG: YinYangLiteral = "阳";
+const YIN:  YinYangLiteral = "阴";
+
 function centralityScore(idx: number): number {
   switch (idx) {
     case 1: return 0; // 二
@@ -26,7 +31,7 @@ function isCentral(idx: number): boolean {
   return idx === 1 || idx === 4; // 二、五为中
 }
 
-// 放宽为 number[]，避免类型不匹配（运行时仍按 6 位判断）
+// 放宽为 number[]，运行时仍按 6 位判断
 function isQian(bin: number[]) {
   return bin[0]===1 && bin[1]===1 && bin[2]===1 && bin[3]===1 && bin[4]===1 && bin[5]===1;
 }
@@ -42,7 +47,7 @@ export interface ZhuXiAdvice {
   lineNotes: Array<{
     index: number;
     label: string; // 初/二/三/四/五/上
-    yinYang: "阳" | "阴";
+    yinYang: YinYangLiteral;
     zhong: boolean;
     dewei: boolean;
   }>;
@@ -59,14 +64,13 @@ export function adviseZhuXi(lines: Lines): ZhuXiAdvice {
   }
   const movingCount = movingIdxs.length;
 
-  // 生成每爻属性（显式标注 lineNotes 的精确类型，保证 yinYang 为字面量联合）
+  // 生成每爻属性 —— 显式标注整体类型 + 使用字面量常量
   const lineNotes: ZhuXiAdvice["lineNotes"] = lines.map((v, i) => {
     const yang = v === 7 || v === 9;
-    const yinYang = (yang ? "阳" : "阴") as "阳" | "阴";
     return {
       index: i,
       label: POS[i],
-      yinYang,
+      yinYang: yang ? YANG : YIN,
       zhong: isCentral(i),
       dewei: isCorrectPosition(i, yang),
     };
